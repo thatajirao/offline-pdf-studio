@@ -25,7 +25,7 @@
 </form>
 </article>
 <article class="tool">
-<div class="tool-icon blue">P→W</div><h3>PDF to Word</h3><p>Choose editable text or a layout-faithful image-based DOCX.</p>
+<div class="tool-icon blue">P→W</div><h3>PDF to Word</h3><p>Editable text is best effort; image-based pages keep appearance but their text cannot be edited.</p>
 <form data-endpoint="/api/pdf-to-word">
 <label class="drop"><input type="file" name="file" accept=".pdf" required><span>Choose PDF</span><small>PDF</small></label>
 <input class="field" type="password" name="password" placeholder="PDF password (if protected)">
@@ -36,6 +36,8 @@
 <label class="checkline"><input type="checkbox" name="ocr" value="yes"> Run OCR first (for scanned PDFs)</label>
 <select class="field" name="language"><option value="eng">OCR language: English</option><option value="eng+tel">English + Telugu</option><option value="tel">Telugu</option><option value="eng+hin">English + Hindi</option></select>
 <select class="field" name="ocr_dpi"><option value="300" selected>OCR resolution: 300 DPI</option><option value="200">200 DPI · Faster</option><option value="400">400 DPI · Small text</option><option value="600">600 DPI · Slow, detailed scans</option></select>
+<label class="checkline"><input type="checkbox" name="clean_scan" value="yes"> Clean scan before OCR (requires unpaper)</label>
+<p class="hint">Higher DPI may help small text on a suitable source scan, but cannot recreate detail that was never captured. More DPI takes longer.</p>
 <button class="action">Convert to Word <b>→</b></button>
 </form>
 </article>
@@ -87,6 +89,7 @@
 <select class="field" name="language"><option value="eng">English</option><option value="eng+tel">English + Telugu</option><option value="tel">Telugu</option><option value="eng+hin">English + Hindi</option></select>
 <select class="field" name="ocr_dpi"><option value="300" selected>300 DPI · Recommended</option><option value="200">200 DPI · Faster</option><option value="400">400 DPI · Small text</option><option value="600">600 DPI · Slow, detailed scans</option></select>
 <label class="checkline"><input type="checkbox" name="clean_scan" value="yes"> Clean scan before OCR (requires unpaper)</label>
+<p class="hint">OCR improves searchability, not original formatting. Review output for missed words, especially handwriting and low-quality scans.</p>
 <input class="field" type="password" name="password" placeholder="PDF password (if protected)">
 <button class="action">Run OCR <b>→</b></button>
 </form>
@@ -116,6 +119,7 @@
 <form data-endpoint="/api/unlock">
 <label class="drop"><input type="file" name="file" accept=".pdf" required><span>Choose protected PDF</span><small>PDF</small></label>
 <input class="field" type="password" name="password" placeholder="PDF password" required>
+<p class="hint">The password is not saved. If it is lost, this app cannot recover it. Keep it in a password manager.</p>
 <button class="action">Unlock PDF <b>→</b></button>
 </form>
 </article>
