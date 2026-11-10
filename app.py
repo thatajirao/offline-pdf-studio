@@ -90,8 +90,15 @@ def find_ocrmypdf():
     if found:
         return found
     appdata = os.environ.get("APPDATA")
+    candidates = [
+        Path.home() / ".local" / "bin" / "ocrmypdf.exe",
+        Path.home() / ".local" / "bin" / "ocrmypdf",
+    ]
+    appdata = os.environ.get("APPDATA")
     if appdata:
-        candidate = Path(appdata) / "Python" / "Scripts" / "ocrmypdf.exe"
+        candidates.append(Path(appdata) / "uv" / "bin" / "ocrmypdf.exe")
+        candidates.append(Path(appdata) / "Python" / "Scripts" / "ocrmypdf.exe")
+    for candidate in candidates:
         if candidate.exists():
             return str(candidate)
     return None
@@ -133,11 +140,11 @@ def ghostscript_path():
 
     install_root = Path(r"C:\Program Files\gs")
     if install_root.exists():
-        candidates = sorted(
-            install_root.glob("gs*/bin/gswin64c.exe"),
-            key=lambda item: str(item),
-            reverse=True
-        )
+        candidates = list(install_root.glob("gs*/bin/gswin64c.exe"))
+        def version_key(item):
+            match = re.search(r"gs([0-9]+(?:\.[0-9]+)*)", str(item.parent.parent), re.IGNORECASE)
+            return tuple(int(part) for part in match.group(1).split(".")) if match else (0,)
+        candidates.sort(key=version_key, reverse=True)
         if candidates:
             return str(candidates[0])
     return None
@@ -254,13 +261,27 @@ def pdf_to_word():
             return jsonify(error="Upload a PDF file."), 400
 
         src = prepare_pdf(src, request.form.get("password", ""))
-        if request.form.get("ocr") == "yes":
+        conversion_style = request.form.get("conversion_style", "editable")
+        ocr_requested = request.form.get("ocr") == "yes"
+
+        if ocr_requested:
             ocr_path = WORK / "ocr_ready.pdf"
             run_ocr(src, ocr_path, request.form.get("language", "eng"))
             src = ocr_path
+        elif conversion_style != "visual":
+            with fitz.open(str(src)) as check_pdf:
+                extracted_chars = sum(
+                    len(re.sub(r"\s+", "", page.get_text("text")))
+                    for page in check_pdf
+                )
+                page_count = check_pdf.page_count
+            if extracted_chars < max(20, page_count * 8):
+                raise ValueError(
+                    "This PDF appears to be scanned or has very little selectable text. "
+                    "Enable 'Run OCR first' and choose the correct language, then convert again."
+                )
 
         output = WORK / "converted.docx"
-        conversion_style = request.form.get("conversion_style", "editable")
         if conversion_style == "visual":
             render_pdf_as_image_docx(src, output)
         else:
