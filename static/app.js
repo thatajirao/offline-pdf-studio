@@ -37,7 +37,22 @@ document.querySelectorAll('form[data-endpoint]').forEach(form => form.addEventLi
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
-    showStatus('Done! Your file has been created and downloaded.', 'success');
+    const compressionResult = response.headers.get('X-Compression-Result');
+    if (compressionResult) {
+      const before = Number(response.headers.get('X-Original-Bytes') || 0);
+      const after = Number(response.headers.get('X-Output-Bytes') || 0);
+      const formatBytes = value => value < 1024 * 1024
+        ? (value / 1024).toFixed(1) + ' KB'
+        : (value / (1024 * 1024)).toFixed(2) + ' MB';
+      if (compressionResult === 'unchanged') {
+        showStatus('This PDF was already compact or could not be reduced. The original file was kept (' + formatBytes(before) + ').', 'success');
+      } else {
+        const percent = before > 0 ? Math.round((1 - after / before) * 100) : 0;
+        showStatus('Compression complete: ' + formatBytes(before) + ' → ' + formatBytes(after) + ' (' + percent + '% smaller).', 'success');
+      }
+    } else {
+      showStatus('Done! Your file has been created and downloaded.', 'success');
+    }
     form.reset();
   } catch (err) {
     showStatus(err.message, 'error');
