@@ -114,16 +114,26 @@ def run_ocr(input_path, output_path, language="eng", oversample_dpi=300, clean_s
     if not re.fullmatch(r"[a-z]{3}(?:\+[a-z]{3})*", language):
         raise ValueError("Use Tesseract language codes such as eng, tel or eng+tel.")
 
+    try:
+        oversample_dpi = int(oversample_dpi)
+    except (TypeError, ValueError):
+        raise ValueError("OCR resolution must be 200, 300, 400 or 600 DPI.")
+
+    if oversample_dpi not in (200, 300, 400, 600):
+        raise ValueError("OCR resolution must be 200, 300, 400 or 600 DPI.")
+
     command = [
         executable,
         "--skip-text",
         "--rotate-pages",
         "--deskew",
+        "--oversample", str(oversample_dpi),
         "--language", language,
         "--output-type", "pdf",
-        str(input_path),
-        str(output_path)
     ]
+    if clean_scan:
+        command.append("--clean")
+    command.extend([str(input_path), str(output_path)])
     result = subprocess.run(command, capture_output=True, text=True, timeout=900)
     if result.returncode != 0 or not output_path.exists():
         detail = (result.stderr or result.stdout or "OCR process failed.")[-1200:]
