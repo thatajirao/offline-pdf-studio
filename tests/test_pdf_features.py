@@ -1,9 +1,14 @@
 import io
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
+from types import SimpleNamespace
 
+from docx import Document
 from pypdf import PdfReader, PdfWriter
 
-from app import app
+from app import app, run_ocr
 
 
 def make_blank_pdf():
@@ -74,6 +79,67 @@ class PdfFeatureTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("scanned", response.get_json()["error"].lower())
+
+    def test_visual_docx_mode_returns_a_word_document(self):
+        response = self.client.post(
+            "/api/pdf-to-word",
+            data={
+                "file": (io.BytesIO(make_blank_pdf()), "page.pdf"),
+                "conversion_style": "visual",
+            },
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 200)
+        document = Document(io.BytesIO(response.data))
+        self.assertEqual(len(document.sections), 1)
+        self.assertEqual(len(document.inline_shapes), 1)
+
+    def test_compression_keeps_original_if_result_is_larger(self):
+        source = make_blank_pdf()
+
+        def fake_compressor(input_path, output_path, quality="ebook"):
+            Path(output_path).write_bytes(Path(input_path).read_bytes() + (b"extra" * 100))
+
+        with patch("app.compress_with_ghostscript", side_effect=fake_compressor):
+            response = self.client.post(
+                "/api/compress",
+                data={"file": (io.BytesIO(source), "source.pdf"), "quality": "ebook"},
+                content_type="multipart/form-data",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("X-Compression-Result"), "unchanged")
+        self.assertEqual(response.data, source)
+
+    def test_ocr_builds_oversampling_and_optional_clean_arguments(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "source.pdf"
+            output = Path(temp_dir) / "output.pdf"
+            source.write_bytes(make_blank_pdf())
+
+            def fake_run(command, **kwargs):
+                Path(command[-1]).write_bytes(make_blank_pdf())
+                return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+            with patch("app.find_ocrmypdf", return_value="ocrmypdf"), patch(
+                "app.subprocess.run", side_effect=fake_run
+            ) as runner:
+                run_ocr(source, output, "eng+tel", 400, True)
+
+            command = runner.call_args.args[0]
+            self.assertIn("--oversample", command)
+            self.assertIn("400", command)
+            self.assertIn("--clean", command)
+            self.assertIn("eng+tel", command)
+
+    def test_ocr_rejects_unsupported_resolution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "source.pdf"
+            output = Path(temp_dir) / "output.pdf"
+            source.write_bytes(make_blank_pdf())
+            with patch("app.find_ocrmypdf", return_value="ocrmypdf"):
+                with self.assertRaisesRegex(ValueError, "200, 300, 400 or 600"):
+                    run_ocr(source, output, "eng", 350, False)
 
 
 if __name__ == "__main__":
