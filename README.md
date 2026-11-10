@@ -64,6 +64,10 @@ Typical setup:
 
 Tesseract's standard Windows installer instructions are linked from the [Tesseract documentation](https://tesseract-ocr.github.io/tessdoc/Installation.html). Install the language data you need. The app offers English (`eng`), Telugu (`tel`), Hindi (`hin`) and combinations, but a language works only when its Tesseract trained-data file is installed.
 
+## PDF-to-DOCX engine note
+
+This project uses pdf2docx as its editable conversion baseline. Its upstream project notes that its rule-based layout reconstruction cannot reproduce every PDF layout perfectly, and the upstream repository says active maintenance has ended. Keep this as a best-effort conversion path; evaluate and test a layout-analysis/OCR pipeline such as PaddleOCR PP-Structure before promising high-fidelity editable conversion for complicated scanned forms or multilingual tables.
+
 ## How the conversion modes work
 
 ### Editable DOCX
