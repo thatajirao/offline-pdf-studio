@@ -103,7 +103,7 @@ def find_ocrmypdf():
     return None
 
 
-def run_ocr(input_path, output_path, language="eng"):
+def run_ocr(input_path, output_path, language="eng", oversample_dpi=300, clean_scan=False):
     executable = find_ocrmypdf()
     if not executable:
         raise ValueError(
@@ -265,7 +265,13 @@ def pdf_to_word():
 
         if ocr_requested:
             ocr_path = WORK / "ocr_ready.pdf"
-            run_ocr(src, ocr_path, request.form.get("language", "eng"))
+            run_ocr(
+                src,
+                ocr_path,
+                request.form.get("language", "eng"),
+                request.form.get("ocr_dpi", "300"),
+                request.form.get("clean_scan") == "yes",
+            )
             src = ocr_path
         elif conversion_style != "visual":
             with fitz.open(str(src)) as check_pdf:
@@ -374,9 +380,44 @@ def compress():
             return jsonify(error="Upload a PDF file."), 400
         src = prepare_pdf(src, request.form.get("password", ""))
 
+        password = request.form.get("password", "")
+        _, was_encrypted = get_pdf_reader(src, password)
+        working_input = prepare_pdf(src, password)
+
+        candidate = WORK / "compressed_candidate.pdf"
+        compress_with_ghostscript(working_input, candidate, request.form.get("quality", "ebook"))
+
+        # If the source was encrypted, reapply its password before comparing sizes.
+        if was_encrypted:
+            candidate_reader = PdfReader(str(candidate), strict=False)
+            protected_candidate = WORK / "compressed_candidate_protected.pdf"
+            candidate_writer = PdfWriter(clone_from=candidate_reader)
+            candidate_writer.encrypt(password, algorithm="AES-256-R5")
+            with protected_candidate.open("wb") as fp:
+                candidate_writer.write(fp)
+            candidate = protected_candidate
+            comparison_source = src
+        else:
+            comparison_source = working_input
+
         output = WORK / "compressed.pdf"
-        compress_with_ghostscript(src, output, request.form.get("quality", "ebook"))
-        return send_file(output, as_attachment=True, download_name="compressed.pdf")
+        original_size = comparison_source.stat().st_size
+        candidate_size = candidate.stat().st_size
+        if candidate_size < original_size:
+            shutil.copy2(candidate, output)
+            result_kind = "reduced"
+            output_size = candidate_size
+        else:
+            # Do not deliver a larger file as a "compressed" result.
+            shutil.copy2(comparison_source, output)
+            result_kind = "unchanged"
+            output_size = original_size
+
+        response = send_file(output, as_attachment=True, download_name="compressed.pdf")
+        response.headers["X-Compression-Result"] = result_kind
+        response.headers["X-Original-Bytes"] = str(original_size)
+        response.headers["X-Output-Bytes"] = str(output_size)
+        return response
     except Exception as exc:
         return jsonify(error=f"PDF compression failed: {exc}"), 400
 
@@ -415,7 +456,13 @@ def ocr_pdf():
             return jsonify(error="Upload a PDF file."), 400
         src = prepare_pdf(src, request.form.get("password", ""))
         output = WORK / "searchable.pdf"
-        run_ocr(src, output, request.form.get("language", "eng"))
+        run_ocr(
+            src,
+            output,
+            request.form.get("language", "eng"),
+            request.form.get("ocr_dpi", "300"),
+            request.form.get("clean_scan") == "yes",
+        )
         return send_file(output, as_attachment=True, download_name="searchable.pdf")
     except Exception as exc:
         return jsonify(error=f"OCR failed: {exc}"), 400
