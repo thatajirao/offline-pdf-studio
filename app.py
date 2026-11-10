@@ -111,7 +111,7 @@ def run_ocr(input_path, output_path, language="eng", oversample_dpi=300, clean_s
             "instructions in README.md, then restart Offline PDF Studio."
         )
 
-    if not re.fullmatch(r"[a-z]{3}(?:\+[a-z]{3})*", language):
+    if not re.fullmatch(r"[a-z]{3}(?:\\+[a-z]{3})*", language):
         raise ValueError("Use Tesseract language codes such as eng, tel or eng+tel.")
 
     try:
@@ -134,9 +134,15 @@ def run_ocr(input_path, output_path, language="eng", oversample_dpi=300, clean_s
     if clean_scan:
         command.append("--clean")
     command.extend([str(input_path), str(output_path)])
+
     result = subprocess.run(command, capture_output=True, text=True, timeout=900)
     if result.returncode != 0 or not output_path.exists():
         detail = (result.stderr or result.stdout or "OCR process failed.")[-1200:]
+        if clean_scan and "unpaper" in detail.lower():
+            raise RuntimeError(
+                "Scan cleaning needs the optional unpaper program. Install unpaper or "
+                "turn off 'Clean scan before OCR', then try again. Details: " + detail
+            )
         raise RuntimeError(detail)
     return output_path
 
