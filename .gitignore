@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Generated files and temporary documents
+work/
+*.pdf
+*.docx
+*.doc
+*.odt
+*.rtf
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
