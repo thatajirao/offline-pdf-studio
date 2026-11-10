@@ -35,6 +35,7 @@
 </select>
 <label class="checkline"><input type="checkbox" name="ocr" value="yes"> Run OCR first (for scanned PDFs)</label>
 <select class="field" name="language"><option value="eng">OCR language: English</option><option value="eng+tel">English + Telugu</option><option value="tel">Telugu</option><option value="eng+hin">English + Hindi</option></select>
+<select class="field" name="ocr_dpi"><option value="300" selected>OCR resolution: 300 DPI</option><option value="200">200 DPI · Faster</option><option value="400">400 DPI · Small text</option><option value="600">600 DPI · Slow, detailed scans</option></select>
 <button class="action">Convert to Word <b>→</b></button>
 </form>
 </article>
@@ -84,6 +85,8 @@
 <form data-endpoint="/api/ocr">
 <label class="drop"><input type="file" name="file" accept=".pdf" required><span>Choose scanned PDF</span><small>PDF</small></label>
 <select class="field" name="language"><option value="eng">English</option><option value="eng+tel">English + Telugu</option><option value="tel">Telugu</option><option value="eng+hin">English + Hindi</option></select>
+<select class="field" name="ocr_dpi"><option value="300" selected>300 DPI · Recommended</option><option value="200">200 DPI · Faster</option><option value="400">400 DPI · Small text</option><option value="600">600 DPI · Slow, detailed scans</option></select>
+<label class="checkline"><input type="checkbox" name="clean_scan" value="yes"> Clean scan before OCR (requires unpaper)</label>
 <input class="field" type="password" name="password" placeholder="PDF password (if protected)">
 <button class="action">Run OCR <b>→</b></button>
 </form>
