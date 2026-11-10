@@ -1,15 +1,17 @@
 # Offline PDF Studio
 
-A local-first PDF utility web app for Windows. Convert and organize documents without uploading files to a cloud service.
+A local-first PDF utility for Windows. It converts and organizes documents without uploading files to a cloud service.
 
 ## Features
 
 - Word (DOC/DOCX), ODT and RTF to PDF (LibreOffice required)
-- PDF to editable DOCX (best effort) or layout-faithful image-based DOCX
+- PDF to editable DOCX (best effort) or image-based DOCX (preserves appearance, not editable text)
 - OCR for scanned PDFs and searchable PDF output (OCRmyPDF + Tesseract required)
+- OCR preprocessing controls: orientation correction, deskew, selectable oversampling DPI, optional cleaning
 - Merge multiple PDFs
-- Extract selected pages (example: `1-3,5,8-9`)
-- Compress image-heavy PDFs with Ghostscript quality presets
+- Extract selected pages
+- Ghostscript PDF compression with Smallest, Balanced and Print presets
+- Do not enlarge files: if Ghostscript output is not smaller, the original file is returned instead
 - Rotate PDF pages
 - Protect PDFs with AES-256 password encryption
 - Unlock PDFs when you know the password
@@ -17,102 +19,103 @@ A local-first PDF utility web app for Windows. Convert and organize documents wi
 
 ## Tech stack
 
-Python, Flask, pypdf[crypto], pdf2docx, PyMuPDF, python-docx, Pillow, HTML, CSS and JavaScript. The pypdf crypto extra enables AES PDF encryption and decryption.
+Python, Flask, pypdf[crypto], pdf2docx, PyMuPDF, python-docx, Pillow, HTML, CSS and JavaScript.
 
 ## Requirements
 
 - Windows 10/11, 64-bit recommended
-- Python 3.10 or newer for the main application
-- LibreOffice for Word-to-PDF conversion
-- Ghostscript 64-bit for PDF compression and as an OCRmyPDF dependency/recommended helper
-- Tesseract OCR and OCRmyPDF for scanned-PDF OCR
-
-The app itself runs locally at `127.0.0.1`. No PDF is uploaded to a hosted server.
+- Python 3.10 or newer
+- LibreOffice for Word-to-PDF
+- Ghostscript 64-bit for PDF compression
+- Tesseract 64-bit and OCRmyPDF for OCR
+- Optional unpaper program if you enable the scan-cleaning option
 
 ## Install the main application
 
 1. Install Python 3.10+ and LibreOffice.
-2. Download or clone this repository.
+2. Clone or download this repository.
 3. Run `install.bat`.
 4. Run `run.bat`.
-5. Open [http://127.0.0.1:5055](http://127.0.0.1:5055).
+5. Open http://127.0.0.1:5055.
 
 ## Enable OCR and stronger compression on Windows
 
-OCRmyPDF's current Windows installation guide requires 64-bit Tesseract, uv, and Ghostscript (Ghostscript is recommended and is used by this project's compression feature). Follow the official [OCRmyPDF Windows installation instructions](https://ocrmypdf.readthedocs.io/en/latest/installation.html).
+OCRmyPDF's native Windows guide requires 64-bit Tesseract and uv, and recommends 64-bit Ghostscript. Use the [official OCRmyPDF Windows installation guide](https://ocrmypdf.readthedocs.io/en/latest/installation.html).
 
-Typical setup:
-
-1. Install Tesseract and uv from an Administrator or normal PowerShell window with:
-   ```powershell
-   winget install -e --id tesseract-ocr.tesseract
-   winget install -e --id astral-sh.uv
-   ```
-2. Install 64-bit Ghostscript from the [official Ghostscript releases page](https://ghostscript.com/releases/).
-3. Close and reopen PowerShell so updated PATH entries are available.
-4. Install OCRmyPDF:
+1. Run `install-ocr-tools.bat` to install Tesseract and uv with winget.
+2. Install 64-bit Ghostscript using the [official Ghostscript releases](https://ghostscript.com/releases/).
+3. Open a NEW PowerShell window and run:
    ```powershell
    uv tool install ocrmypdf
    ```
-5. Confirm the tools are available:
+4. Verify:
    ```powershell
    tesseract --version
    tesseract --list-langs
    ocrmypdf --version
+   gswin64c.exe -version
    ```
-6. Restart Offline PDF Studio.
+5. Restart Offline PDF Studio.
 
-Tesseract's standard Windows installer instructions are linked from the [Tesseract documentation](https://tesseract-ocr.github.io/tessdoc/Installation.html). Install the language data you need. The app offers English (`eng`), Telugu (`tel`), Hindi (`hin`) and combinations, but a language works only when its Tesseract trained-data file is installed.
+Install the Tesseract trained-data files for every language you select in the app. The options shown are English (`eng`), Telugu (`tel`), Hindi (`hin`), and combinations. A language option works only when its Tesseract language data is installed.
 
-## PDF-to-DOCX engine note
+The optional `--clean` OCR preprocessing switch needs the `unpaper` program. If OCR reports that unpaper is missing, uncheck **Clean scan before OCR** and run OCR again. Orientation correction, deskewing and oversampling work without this optional cleaning switch.
 
-This project uses pdf2docx as its editable conversion baseline. Its upstream project notes that its rule-based layout reconstruction cannot reproduce every PDF layout perfectly, and the upstream repository says active maintenance has ended. Keep this as a best-effort conversion path; evaluate and test a layout-analysis/OCR pipeline such as PaddleOCR PP-Structure before promising high-fidelity editable conversion for complicated scanned forms or multilingual tables.
+## How to improve OCR results
 
-## How the conversion modes work
+- Start with a clean scan. A sharp 300 DPI scan is a good baseline for ordinary text; 400 DPI can help small print when the original contains enough detail.
+- Use the correct Tesseract language or language combination.
+- The app enables automatic page-rotation detection and deskewing.
+- Try optional scan cleaning only for noisy backgrounds; inspect the output because cleaning can remove faint marks or content.
+- Higher DPI increases processing time and memory use. Upsampling cannot recover detail missing from a blurry or low-resolution original.
+- Tesseract-based OCR is not reliable for handwriting. For handwriting, evaluate a handwriting-specific recognition system.
+
+OCRmyPDF adds a searchable text layer; it does not recreate the original Word formatting. See the [OCRmyPDF documentation on limitations and preprocessing](https://ocrmypdf.readthedocs.io/en/latest/introduction.html) and its [image-processing cookbook](https://ocrmypdf.readthedocs.io/en/latest/cookbook.html).
+
+## PDF-to-DOCX: two different goals
 
 ### Editable DOCX
 
-Uses pdf2docx to reconstruct paragraphs and layout from the PDF's text and positioning. For scanned PDFs, enable **Run OCR first**. OCR helps recover text, but exact fonts, columns, tables, and complex layouts may still need manual correction. PDF-to-Word is a reconstruction process, not a perfect reversal of the original Word file.
+Uses pdf2docx to reconstruct text and layout. It can preserve common paragraphs and some tables, but complex columns, nested tables, unusual fonts, page decorations, and reading order may need manual correction. When a PDF is scanned, run OCR first to create a text layer.
+
+Important maintenance note: the upstream pdf2docx project announced that Artifex no longer actively maintains it. Treat this converter as a best-effort component, keep it updated only after testing, and consider a separately tested layout-analysis engine for a future advanced conversion mode. [Upstream project status](https://github.com/ArtifexSoftware/pdf2docx).
+
+A possible future engine is [PaddleOCR PP-StructureV3](https://www.paddleocr.ai/main/en/version3.x/pipeline_usage/PP-StructureV3.html), which offers document layout analysis, table recognition, and reading-order recovery. It has a substantially heavier model/runtime footprint and would need its own benchmark and offline packaging work; it is not included in the current app.
 
 ### Layout-faithful DOCX
 
-Embeds each rendered PDF page as an image in a Word document. It is intended to preserve the page's visual appearance, but the page text is not directly editable as Word text. Use this mode when appearance matters more than editing individual words.
+Embeds each rendered PDF page as a full-page image in a Word document. This is useful when visual appearance is the priority. The text inside each page image cannot be edited as normal Word text or searched like native text.
 
-## Compression quality
+## Compression behavior
 
-Ghostscript's presets trade image quality for file size:
+Ghostscript's presets trade file size against visual quality:
 
-- **Smallest file**: more aggressive downsampling; inspect images and small text carefully.
+- **Smallest file**: stronger downsampling and lower image quality.
 - **Balanced**: a compromise for typical sharing.
-- **Print quality**: larger output with more image detail.
+- **Print quality**: preserves more image detail.
 
-Compression is not guaranteed to make every PDF smaller. Some PDFs may already be optimized, and some files may become larger after rewriting. Keep the original and compare both file size and visual quality before deleting it.
+The app compares the output size with the input. If the recompressed file is not smaller, it returns the original PDF instead and tells you that no reduction was achieved. Always inspect image quality before replacing your source file.
 
-## Password-protected PDFs
+## Password protection
 
-- Enter the existing password to convert, merge, split, rotate, compress or OCR a protected PDF.
-- Use **Protect PDF** to encrypt a PDF with a new AES-256 password.
+- Enter the existing password to convert, merge, split, rotate, compress, or OCR a protected PDF.
+- Use **Protect PDF** to encrypt a PDF using AES-256.
 - Use **Unlock PDF** to remove encryption when you know a valid password.
-- This application does not recover, crack or bypass unknown passwords. It cannot decrypt a file without the required password.
+- Passwords are not stored by this application.
+- This software does not crack, bypass, or recover unknown passwords. Keep passwords in a password manager and maintain an authorized backup.
 
-## Privacy and temporary files
+See [pypdf encryption and decryption documentation](https://pypdf.readthedocs.io/en/latest/user/encryption-decryption.html).
 
-- Flask binds only to `127.0.0.1`, so the app is intended for use on the same computer.
-- Documents are processed locally; there is no cloud upload or user account.
-- Temporary documents are stored in `work/`. Close the app and clear that folder to remove temporary files.
-- Do not use this tool as a substitute for secure document handling on shared or compromised computers.
+## Local processing and privacy
 
-## Limitations
+- Flask binds only to `127.0.0.1`, for use on the same computer.
+- Documents are processed locally. There is no cloud upload or user account.
+- Temporary files are stored in `work/`. Close the app and clear that folder to remove temporary files.
+- Initial software/model downloads require internet access. After dependencies, language data and OCR models are installed, the app can be used offline.
 
-- OCR quality depends on scan resolution, skew, language data, handwriting, and document condition.
-- OCR does not restore the original document's exact formatting.
-- Image-based DOCX preserves appearance but is not text-editable.
-- Ghostscript compression may reduce quality and may not make every file smaller.
-- Password protection requires the correct existing password; there is no password recovery feature.
+## Licensing
 
-## Licensing note
-
-Before distributing an installer that bundles Ghostscript, review the [Ghostscript licensing FAQ](https://ghostscript.com/faq/) and choose an appropriate license. This repository does not bundle Ghostscript, Tesseract, OCRmyPDF or LibreOffice.
+This project does not bundle LibreOffice, Ghostscript, OCRmyPDF, Tesseract, unpaper, or model files. Before distributing an installer that includes third-party binaries, review each component's license. Ghostscript licensing in particular needs careful review if you redistribute it; see the [Ghostscript FAQ](https://ghostscript.com/faq/).
 
 ## License
 
