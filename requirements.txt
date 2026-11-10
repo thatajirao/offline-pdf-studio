@@ -1,5 +1,5 @@
 Flask==3.1.0
-pypdf>=5.9.0,<6
+pypdf[crypto]>=5.9.0,<6
 pdf2docx==0.5.8
 Pillow>=11,<13
 Werkzeug>=3.1,<4
