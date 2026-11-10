@@ -1,7 +1,7 @@
 const tabs = document.querySelectorAll('.tab');
 tabs.forEach(tab => tab.addEventListener('click', () => {
   tabs.forEach(t => t.classList.toggle('active', t === tab));
-  ['convert','organize','images'].forEach(id => document.getElementById(id).classList.toggle('hidden', id !== tab.dataset.tab));
+  ['convert','organize','images','security'].forEach(id => document.getElementById(id).classList.toggle('hidden', id !== tab.dataset.tab));
   showStatus('');
 }));
 function showStatus(message, type='') {
