@@ -17,7 +17,7 @@ A local-first PDF utility web app for Windows. Convert and organize documents wi
 
 ## Tech stack
 
-Python, Flask, pypdf, pdf2docx, PyMuPDF, python-docx, Pillow, HTML, CSS and JavaScript.
+Python, Flask, pypdf[crypto], pdf2docx, PyMuPDF, python-docx, Pillow, HTML, CSS and JavaScript. The pypdf crypto extra enables AES PDF encryption and decryption.
 
 ## Requirements
 
