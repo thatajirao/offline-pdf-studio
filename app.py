@@ -89,7 +89,6 @@ def find_ocrmypdf():
     found = shutil.which("ocrmypdf")
     if found:
         return found
-    appdata = os.environ.get("APPDATA")
     candidates = [
         Path.home() / ".local" / "bin" / "ocrmypdf.exe",
         Path.home() / ".local" / "bin" / "ocrmypdf",
@@ -112,7 +111,7 @@ def run_ocr(input_path, output_path, language="eng"):
             "instructions in README.md, then restart Offline PDF Studio."
         )
 
-    if not re.fullmatch(r"[a-z]{3}(?:\\+[a-z]{3})*", language):
+    if not re.fullmatch(r"[a-z]{3}(?:\+[a-z]{3})*", language):
         raise ValueError("Use Tesseract language codes such as eng, tel or eng+tel.")
 
     command = [
