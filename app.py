@@ -394,7 +394,6 @@ def compress():
         src = save_upload()
         if src.suffix.lower() != ".pdf":
             return jsonify(error="Upload a PDF file."), 400
-        src = prepare_pdf(src, request.form.get("password", ""))
 
         password = request.form.get("password", "")
         _, was_encrypted = get_pdf_reader(src, password)
