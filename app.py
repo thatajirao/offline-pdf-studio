@@ -111,7 +111,7 @@ def run_ocr(input_path, output_path, language="eng", oversample_dpi=300, clean_s
             "instructions in README.md, then restart Offline PDF Studio."
         )
 
-    if not re.fullmatch(r"[a-z]{3}(?:\\+[a-z]{3})*", language):
+    if not re.fullmatch(r"[a-z]{3}(?:\+[a-z]{3})*", language):
         raise ValueError("Use Tesseract language codes such as eng, tel or eng+tel.")
 
     try:
