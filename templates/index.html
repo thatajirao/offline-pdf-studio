@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offline PDF Studio</title><link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top"><div class="brand"><span class="logo">P</span><div><b>Offline PDF Studio</b><small>Private document tools · Works on your PC</small></div></div><span class="local"><i></i> LOCAL MODE</span></header>
+<main>
+<section class="hero"><div class="eyebrow">YOUR DOCUMENT WORKSPACE</div><h1>PDF tools.<br><em>Without the upload.</em></h1><p>Convert, organize and manage documents locally on your Windows computer. Your files are processed on this device.</p></section>
+<section class="panel">
+<div class="tabs" role="tablist">
+<button class="tab active" data-tab="convert">Convert</button><button class="tab" data-tab="organize">Organize</button><button class="tab" data-tab="images">Images</button>
+</div>
+<div class="grid" id="convert">
+<article class="tool featured"><div class="tool-icon purple">W→P</div><h3>Word to PDF</h3><p>Convert DOC or DOCX into a PDF document.</p><form data-endpoint="/api/word-to-pdf"><label class="drop"><input type="file" name="file" accept=".doc,.docx,.odt,.rtf" required><span>Choose Word document</span><small>DOC · DOCX · ODT · RTF</small></label><button class="action">Convert to PDF <b>→</b></button></form></article>
+<article class="tool"><div class="tool-icon blue">P→W</div><h3>PDF to Word</h3><p>Turn PDF pages into an editable DOCX file.</p><form data-endpoint="/api/pdf-to-word"><label class="drop"><input type="file" name="file" accept=".pdf" required><span>Choose PDF</span><small>PDF</small></label><button class="action">Convert to Word <b>→</b></button></form></article>
+</div>
+<div class="grid hidden" id="organize">
+<article class="tool"><div class="tool-icon orange">＋</div><h3>Merge PDFs</h3><p>Combine multiple PDF files into one document.</p><form data-endpoint="/api/merge"><label class="drop"><input type="file" name="files" accept=".pdf" multiple required><span>Choose 2 or more PDFs</span><small>PDF · Multiple files</small></label><button class="action">Merge PDFs <b>→</b></button></form></article>
+<article class="tool"><div class="tool-icon blue">✂</div><h3>Extract pages</h3><p>Save selected pages as a separate PDF.</p><form data-endpoint="/api/split"><label class="drop"><input type="file" name="file" accept=".pdf" required><span>Choose PDF</span><small>PDF</small></label><input class="field" name="pages" placeholder="Pages: 1-3,5,8-9" required><button class="action">Extract pages <b>→</b></button></form></article>
+<article class="tool"><div class="tool-icon green">↓</div><h3>Compress PDF</h3><p>Optimize PDF content streams to reduce file size where possible.</p><form data-endpoint="/api/compress"><label class="drop"><input type="file" name="file" accept=".pdf" required><span>Choose PDF</span><small>PDF</small></label><button class="action">Compress PDF <b>→</b></button></form></article>
+<article class="tool"><div class="tool-icon pink">↻</div><h3>Rotate PDF</h3><p>Rotate every page in your PDF file.</p><form data-endpoint="/api/rotate"><label class="drop"><input type="file" name="file" accept=".pdf" required><span>Choose PDF</span><small>PDF</small></label><select class="field" name="degrees"><option value="90">90° clockwise</option><option value="180">180°</option><option value="270">270° clockwise</option></select><button class="action">Rotate PDF <b>→</b></button></form></article>
+</div>
+<div class="grid hidden" id="images">
+<article class="tool"><div class="tool-icon orange">▧</div><h3>Images to PDF</h3><p>Combine JPG, PNG and other supported images into one PDF.</p><form data-endpoint="/api/images-to-pdf"><label class="drop"><input type="file" name="files" accept="image/*" multiple required><span>Choose images</span><small>JPG · PNG · WEBP · Multiple files</small></label><button class="action">Create PDF <b>→</b></button></form></article>
+</div>
+<div id="status" class="status" aria-live="polite"></div>
+</section>
+<section class="trust"><div><b>100% local processing</b><span>Files are handled by the local app on your computer.</span></div><div><b>No account required</b><span>No sign-in or cloud upload.</span></div><div><b>Works offline</b><span>After installation, disconnect from the internet and use it.</span></div></section>
+<footer>OFFLINE PDF STUDIO <span>Built for your desktop · 127.0.0.1</span></footer>
+</main>
+<script src="/static/app.js"></script>
+</body></html>
