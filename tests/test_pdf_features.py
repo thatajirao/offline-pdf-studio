@@ -111,6 +111,32 @@ class PdfFeatureTests(unittest.TestCase):
         self.assertEqual(response.headers.get("X-Compression-Result"), "unchanged")
         self.assertEqual(response.data, source)
 
+    def test_compression_preserves_pdf_password(self):
+        writer = PdfWriter()
+        writer.add_blank_page(width=300, height=300)
+        writer.encrypt("keep-this-pass", algorithm="AES-256-R5")
+        protected_source = io.BytesIO()
+        writer.write(protected_source)
+
+        def fake_compressor(input_path, output_path, quality="ebook"):
+            Path(output_path).write_bytes(make_blank_pdf())
+
+        with patch("app.compress_with_ghostscript", side_effect=fake_compressor):
+            response = self.client.post(
+                "/api/compress",
+                data={
+                    "file": (io.BytesIO(protected_source.getvalue()), "protected.pdf"),
+                    "password": "keep-this-pass",
+                    "quality": "ebook",
+                },
+                content_type="multipart/form-data",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        result_reader = PdfReader(io.BytesIO(response.data))
+        self.assertTrue(result_reader.is_encrypted)
+        self.assertTrue(result_reader.decrypt("keep-this-pass"))
+
     def test_ocr_builds_oversampling_and_optional_clean_arguments(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             source = Path(temp_dir) / "source.pdf"
